@@ -157,7 +157,7 @@ mkCommand
 mkCommand creds vers meta nonce nid rpc = mkCommand' creds encodedPayload
   where
     encodedPayload = J.encodeStrict $ toLegacyJsonViaEncode payload
-    payload = Payload rpc nonce meta (keyPairsToSigners creds) vers nid
+    payload = Payload rpc nonce meta (keyPairsToSigners creds) (Just vers) nid
 
 data WebAuthnPubKeyPrefixed
   = WebAuthnPubKeyPrefixed
@@ -252,7 +252,7 @@ mkUnsignedCommand
   -> IO (Command ByteString)
 mkUnsignedCommand signers vers meta nonce nid rpc = mkCommand' [] encodedPayload
   where encodedPayload = J.encodeStrict payload
-        payload = Payload rpc nonce meta signers vers nid
+        payload = Payload rpc nonce meta signers (Just vers) nid
 
 signHash :: TypedHash h -> Ed25519KeyPair -> Text
 signHash hsh (pub,priv) =
@@ -391,7 +391,7 @@ data Payload m c = Payload
   , _pNonce :: !Text
   , _pMeta :: !m
   , _pSigners :: ![Signer]
-  , _pVerifiers :: ![Verifier]
+  , _pVerifiers :: !(Maybe [Verifier])
   , _pNetworkId :: !(Maybe NetworkId)
   } deriving (Show, Eq, Generic, Functor, Foldable, Traversable)
 instance (NFData a,NFData m) => NFData (Payload m a)
@@ -401,7 +401,7 @@ instance (J.Encode a, J.Encode m) => J.Encode (Payload m a) where
     [ "networkId" J..= _pNetworkId o
     , "payload" J..= _pPayload o
     , "signers" J..= J.Array (_pSigners o)
-    , "verifiers" J..= J.Array (_pVerifiers o)
+    , "verifiers" J..?= fmap J.Array (_pVerifiers o)
     , "meta" J..= _pMeta o
     , "nonce" J..= _pNonce o
     ]
