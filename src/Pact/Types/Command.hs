@@ -45,10 +45,10 @@ module Pact.Types.Command
   , PPKScheme(..)
   , Ed25519KeyPairCaps
   , ProcessedCommand(..),_ProcSucc,_ProcFail
-  , Payload(..),pMeta,pNonce,pPayload,pSigners,pNetworkId
+  , Payload(..),pMeta,pNonce,pPayload,pSigners,pVerifiers,pNetworkId
   , ParsedCode(..),pcCode,pcExps
   , Signer(..),siScheme, siPubKey, siAddress, siCapList
-  , Verifier(..),veType, veCapList
+  , Verifier(..),veName, veCapList
   , UserSig(..),usSig
   , PactResult(..)
   , CommandResult(..),crReqKey,crTxId,crResult,crGas,crLogs,crEvents
@@ -148,15 +148,16 @@ mkCommand
   :: J.Encode c
   => J.Encode m
   => [(Ed25519KeyPair, [MsgCapability])]
+  -> [Verifier]
   -> m
   -> Text
   -> Maybe NetworkId
   -> PactRPC c
   -> IO (Command ByteString)
-mkCommand creds meta nonce nid rpc = mkCommand' creds encodedPayload
+mkCommand creds vers meta nonce nid rpc = mkCommand' creds encodedPayload
   where
     encodedPayload = J.encodeStrict $ toLegacyJsonViaEncode payload
-    payload = Payload rpc nonce meta (keyPairsToSigners creds) nid
+    payload = Payload rpc nonce meta (keyPairsToSigners creds) vers nid
 
 data WebAuthnPubKeyPrefixed
   = WebAuthnPubKeyPrefixed
@@ -243,14 +244,15 @@ mkUnsignedCommand
   :: J.Encode m
   => J.Encode c
   => [Signer]
+  -> [Verifier]
   -> m
   -> Text
   -> Maybe NetworkId
   -> PactRPC c
   -> IO (Command ByteString)
-mkUnsignedCommand signers meta nonce nid rpc = mkCommand' [] encodedPayload
+mkUnsignedCommand signers vers meta nonce nid rpc = mkCommand' [] encodedPayload
   where encodedPayload = J.encodeStrict payload
-        payload = Payload rpc nonce meta signers nid
+        payload = Payload rpc nonce meta signers vers nid
 
 signHash :: TypedHash h -> Ed25519KeyPair -> Text
 signHash hsh (pub,priv) =
@@ -361,7 +363,7 @@ instance Arbitrary Signer where
   arbitrary = Signer <$> arbitrary <*> arbitrary <*> arbitrary <*> scale (min 5) arbitrary
 
 data Verifier = Verifier
-  { _veType :: !Text
+  { _veName :: !VerifierName
   , _veCapList :: [MsgCapability]
   } deriving (Eq, Ord, Show, Generic)
 
@@ -369,13 +371,13 @@ instance NFData Verifier
 
 instance J.Encode Verifier where
   build o = J.object
-    [ "type" J..= _veType o
+    [ "name" J..= _veName o
     , "clist" J..??= J.Array (_veCapList o)
     ]
 
 instance FromJSON Verifier where
   parseJSON = withObject "Verifier" $ \o -> Verifier
-    <$> o .: "type"
+    <$> o .: "name"
     <*> (listMay <$> (o .:? "clist"))
     where
       listMay = fromMaybe []
@@ -389,6 +391,7 @@ data Payload m c = Payload
   , _pNonce :: !Text
   , _pMeta :: !m
   , _pSigners :: ![Signer]
+  , _pVerifiers :: ![Verifier]
   , _pNetworkId :: !(Maybe NetworkId)
   } deriving (Show, Eq, Generic, Functor, Foldable, Traversable)
 instance (NFData a,NFData m) => NFData (Payload m a)
@@ -398,6 +401,7 @@ instance (J.Encode a, J.Encode m) => J.Encode (Payload m a) where
     [ "networkId" J..= _pNetworkId o
     , "payload" J..= _pPayload o
     , "signers" J..= J.Array (_pSigners o)
+    , "verifiers" J..= J.Array (_pVerifiers o)
     , "meta" J..= _pMeta o
     , "nonce" J..= _pNonce o
     ]
@@ -410,6 +414,7 @@ instance (Arbitrary m, Arbitrary c) => Arbitrary (Payload m c) where
     <$> arbitrary
     <*> arbitrary
     <*> arbitrary
+    <*> scale (min 10) arbitrary
     <*> scale (min 10) arbitrary
     <*> arbitrary
 
