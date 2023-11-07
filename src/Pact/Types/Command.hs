@@ -157,7 +157,7 @@ mkCommand
 mkCommand creds vers meta nonce nid rpc = mkCommand' creds encodedPayload
   where
     encodedPayload = J.encodeStrict $ toLegacyJsonViaEncode payload
-    payload = Payload rpc nonce meta (keyPairsToSigners creds) (Just vers) nid
+    payload = Payload rpc nonce meta (keyPairsToSigners creds) (if null vers then Nothing else Just vers) nid
 
 data WebAuthnPubKeyPrefixed
   = WebAuthnPubKeyPrefixed
@@ -252,7 +252,7 @@ mkUnsignedCommand
   -> IO (Command ByteString)
 mkUnsignedCommand signers vers meta nonce nid rpc = mkCommand' [] encodedPayload
   where encodedPayload = J.encodeStrict payload
-        payload = Payload rpc nonce meta signers (Just vers) nid
+        payload = Payload rpc nonce meta signers (if null vers then Nothing else Just vers) nid
 
 signHash :: TypedHash h -> Ed25519KeyPair -> Text
 signHash hsh (pub,priv) =
