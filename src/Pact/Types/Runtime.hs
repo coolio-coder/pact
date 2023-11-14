@@ -98,6 +98,7 @@ import Pact.Types.Pretty
 import Pact.Types.RowData
 import Pact.Types.SPV
 import Pact.Types.Util
+import Pact.Types.Verifier
 import Pact.Types.Namespace
 
 import Pact.JSON.Legacy.Value (LegacyValue(..))
@@ -256,7 +257,7 @@ data EvalEnv e = EvalEnv {
       _eeRefStore :: !RefStore
     , _eeMsgSigs :: !(M.Map PublicKeyText (S.Set UserCapability))
       -- | Verifiers other than signatures
-    , _eeMsgVerifiers :: !(M.Map VerifierName (S.Set UserCapability))
+    , _eeMsgVerifiers :: !(M.Map VerifierArgs (S.Set UserCapability))
       -- | JSON body accompanying message.
     , _eeMsgBody :: !LegacyValue
       -- | Execution mode

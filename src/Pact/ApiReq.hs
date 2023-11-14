@@ -79,6 +79,7 @@ import Pact.Types.RPC
 import Pact.Types.Runtime
 import Pact.Types.SigData
 import Pact.Types.SPV
+import Pact.Types.Verifier
 import qualified Pact.JSON.Encode as J
 import Pact.JSON.Legacy.Value
 import Pact.JSON.Yaml
@@ -148,7 +149,7 @@ instance Arbitrary ApiSigner where
 -- ApiVerifier
 
 data ApiVerifier = ApiVerifier {
-  _avName :: Text,
+  _avArgs :: VerifierArgs,
   _avCaps :: [MsgCapability]
   } deriving (Eq, Show, Generic)
 
@@ -156,7 +157,7 @@ instance FromJSON ApiVerifier where parseJSON = lensyParseJSON 3
 
 instance J.Encode ApiVerifier where
   build o = J.object
-    [ "name" J..= _avName o
+    [ "args" J..= _avArgs o
     , "caps" J..= J.Array (_avCaps o)
     ]
   {-# INLINE build #-}
@@ -531,7 +532,7 @@ mkApiReqExec unsignedReq ar@ApiReq{..} fp = do
       _ -> dieAR "Expected either a 'data' or 'dataFile' entry, or neither"
     return (code,cdata)
   pubMeta <- mkPubMeta _ylPublicMeta
-  let verifiers = (\ApiVerifier {..} -> Verifier (VerifierName _avName) _avCaps) <$> fromMaybe [] _ylVerifiers
+  let verifiers = (\ApiVerifier {..} -> Verifier _avArgs _avCaps) <$> fromMaybe [] _ylVerifiers
   cmd <- withKeypairsOrSigner unsignedReq ar
     (\ks -> mkExec code cdata pubMeta ks verifiers _ylNetworkId _ylNonce)
     (\ss -> mkUnsignedExec code cdata pubMeta ss verifiers _ylNetworkId _ylNonce)
@@ -643,7 +644,7 @@ mkApiReqCont unsignedReq ar@ApiReq{..} fp = do
       _ -> dieAR "Expected either a 'data' or 'dataFile' entry, or neither"
   let pactId = toPactId apiPactId
   pubMeta <- mkPubMeta _ylPublicMeta
-  let verifiers = (\ApiVerifier {..} -> Verifier (VerifierName _avName) _avCaps) <$> fromMaybe [] _ylVerifiers
+  let verifiers = (\ApiVerifier {..} -> Verifier _avArgs _avCaps) <$> fromMaybe [] _ylVerifiers
   cmd <- withKeypairsOrSigner unsignedReq ar
     (\ks -> mkCont pactId step rollback cdata pubMeta ks verifiers _ylNonce _ylProof _ylNetworkId)
     (\ss -> mkUnsignedCont pactId step rollback cdata pubMeta ss verifiers _ylNonce _ylProof _ylNetworkId)

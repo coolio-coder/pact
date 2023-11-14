@@ -38,7 +38,6 @@ module Pact.Types.Term
    PublicKeyText(..),
    KeySet(..), mkKeySet,
    KeySetName(..),
-   VerifierName(..),
    PactGuard(..),
    PactId(..),
    UserGuard(..),

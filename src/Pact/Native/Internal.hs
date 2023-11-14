@@ -6,6 +6,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ViewPatterns #-}
+
 -- |
 -- Module      :  Pact.Native.Internal
 -- Copyright   :  (C) 2016 Stuart Popejoy
@@ -67,6 +69,7 @@ import Pact.Types.Native
 import Pact.Types.PactValue
 import Pact.Types.Pretty
 import Pact.Types.Runtime
+import Pact.Types.Verifier
 import Pact.Runtime.Capabilities
 
 import Unsafe.Coerce
@@ -212,8 +215,8 @@ enforceVerifierDef = defRNative
   where
   enforceVerifier :: RNativeFun e
   enforceVerifier i as = case as of
-    [TLitString verifierName] -> do
-      views eeMsgVerifiers (Map.lookup (VerifierName verifierName)) >>= \case
+    [TLitString verifierName, TList {_tList = (traverse (preview _TLitString) -> Just args) }] -> do
+      views eeMsgVerifiers (Map.lookup (VerifierArgs verifierName (V.toList args))) >>= \case
         Just verifierCaps -> do
           verifierInScope <- verifierIsInScope verifierCaps
           if verifierInScope then return (toTerm True)

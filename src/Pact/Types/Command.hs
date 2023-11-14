@@ -48,7 +48,7 @@ module Pact.Types.Command
   , Payload(..),pMeta,pNonce,pPayload,pSigners,pVerifiers,pNetworkId
   , ParsedCode(..),pcCode,pcExps
   , Signer(..),siScheme, siPubKey, siAddress, siCapList
-  , Verifier(..),veName, veCapList
+  , Verifier(..),veArgs, veCapList
   , UserSig(..),usSig
   , PactResult(..)
   , CommandResult(..),crReqKey,crTxId,crResult,crGas,crLogs,crEvents
@@ -92,6 +92,7 @@ import Pact.Types.Orphans ()
 import Pact.Types.PactValue (PactValue(..))
 import Pact.Types.RPC
 import Pact.Types.Runtime
+import Pact.Types.Verifier
 
 import Pact.JSON.Legacy.Value
 import qualified Pact.JSON.Encode as J
@@ -363,7 +364,7 @@ instance Arbitrary Signer where
   arbitrary = Signer <$> arbitrary <*> arbitrary <*> arbitrary <*> scale (min 5) arbitrary
 
 data Verifier = Verifier
-  { _veName :: !VerifierName
+  { _veArgs :: !VerifierArgs
   , _veCapList :: [MsgCapability]
   } deriving (Eq, Ord, Show, Generic)
 
@@ -371,7 +372,7 @@ instance NFData Verifier
 
 instance J.Encode Verifier where
   build o = J.object
-    [ "name" J..= _veName o
+    [ "args" J..= _veArgs o
     , "clist" J..??= J.Array (_veCapList o)
     ]
 
