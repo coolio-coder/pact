@@ -500,7 +500,7 @@ signCmd keyFiles bs = do
 withKeypairsOrSigner
   :: Bool
   -> ApiReq
-  -> ([(DynKeyPair, [SigCapability])] -> IO a)
+  -> ([(DynKeyPair, [MsgCapability])] -> IO a)
   -> ([Signer] -> IO a)
   -> IO a
 withKeypairsOrSigner unsignedReq ApiReq{..} keypairAction signerAction =
@@ -569,7 +569,7 @@ mkExec
     -- ^ optional environment data
   -> PublicMeta
     -- ^ public metadata
-  -> [(DynKeyPair, [SigCapability])]
+  -> [(DynKeyPair, [MsgCapability])]
     -- ^ signing keypairs + caplists
   -> [Verifier]
     -- ^ verifiers
@@ -663,7 +663,7 @@ mkCont
     -- ^ environment data
   -> PublicMeta
     -- ^ command public metadata
-  -> [(DynKeyPair, [SigCapability])]
+  -> [(DynKeyPair, [MsgCapability])]
     -- ^ signing keypairs
   -> [Verifier]
     -- ^ signing keypairs
@@ -724,15 +724,15 @@ mkUnsignedCont txid step rollback mdata pubMeta kps ves ridm proof nid = do
 -- Parse `APIKeyPair`s into Ed25519 keypairs and WebAuthn keypairs.
 -- The keypairs must not be prefixed with "WEBAUTHN-", it accepts
 -- only the raw (unprefixed) keys.
-mkKeyPairs :: [ApiKeyPair] -> IO [(DynKeyPair, [SigCapability])]
+mkKeyPairs :: [ApiKeyPair] -> IO [(DynKeyPair, [MsgCapability])]
 mkKeyPairs keyPairs = traverse mkPair keyPairs
   where
 
         importValidKeyPair
           :: Maybe PublicKeyBS
           -> PrivateKeyBS
-          -> Maybe [SigCapability]
-          -> Either String (Ed25519KeyPair, [SigCapability])
+          -> Maybe [MsgCapability]
+          -> Either String (Ed25519KeyPair, [MsgCapability])
         importValidKeyPair pubEd25519 privEd25519 caps = fmap (,maybe [] id caps) $
           importEd25519KeyPair pubEd25519 privEd25519
 
@@ -742,7 +742,7 @@ mkKeyPairs keyPairs = traverse mkPair keyPairs
           Just ED25519 -> True
           _ -> False
 
-        mkPair :: ApiKeyPair -> IO (DynKeyPair, [SigCapability])
+        mkPair :: ApiKeyPair -> IO (DynKeyPair, [MsgCapability])
         mkPair akp = case (_akpScheme akp, _akpPublic akp, _akpSecret akp, _akpAddress akp) of
           (scheme, pub, priv, Nothing) | isEd25519 scheme ->
             either dieAR (return . first DynEd25519KeyPair) (importValidKeyPair pub priv (_akpCaps akp))
