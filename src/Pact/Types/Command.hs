@@ -172,7 +172,7 @@ data DynKeyPair
 mkCommandWithDynKeys
   :: J.Encode c
   => J.Encode m
-  => [(DynKeyPair, [SigCapability])]
+  => [(DynKeyPair, [MsgCapability])]
   -> m
   -> Text
   -> Maybe NetworkId
