@@ -49,7 +49,7 @@ module Pact.Types.Command
   , ParsedCode(..),pcCode,pcExps
   , Signer(..),siScheme, siPubKey, siAddress, siCapList
   , Verifier(..),veArgs, veCapList
-  , UserSig(..),usSig
+  , UserSig(..)
   , PactResult(..)
   , CommandResult(..),crReqKey,crTxId,crResult,crGas,crLogs,crEvents
   , crContinuation,crMetaData
