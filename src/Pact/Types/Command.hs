@@ -173,15 +173,16 @@ mkCommandWithDynKeys
   :: J.Encode c
   => J.Encode m
   => [(DynKeyPair, [MsgCapability])]
+  -> [Verifier]
   -> m
   -> Text
   -> Maybe NetworkId
   -> PactRPC c
   -> IO (Command ByteString)
-mkCommandWithDynKeys creds meta nonce nid rpc = mkCommandWithDynKeys' creds encodedPayload
+mkCommandWithDynKeys creds vers meta nonce nid rpc = mkCommandWithDynKeys' creds encodedPayload
   where
     encodedPayload = J.encodeStrict $ toLegacyJsonViaEncode payload
-    payload = Payload rpc nonce meta (map credToSigner creds) nid
+    payload = Payload rpc nonce meta (map credToSigner creds) (if null vers then Nothing else Just vers) nid
     credToSigner cred =
       case cred of
         (DynEd25519KeyPair (pubEd25519, _), caps) ->
